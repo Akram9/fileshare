@@ -355,6 +355,5 @@ class Share_02 {
             }
         }
         scan.close();
-        //br.close();
     }
 }
