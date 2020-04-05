@@ -12,9 +12,12 @@ class Property {
 
     String getProperty(String property) {
         Properties properties = new Properties();
+        ClassLoader cl = this.getClass().getClassLoader();
 
         try {
-            properties.load(new FileInputStream("src/main/resources/config.properties"));
+            InputStream is = cl.getResourceAsStream("config.properties");
+            assert is != null;
+            properties.load(is);
             return properties.getProperty(property);
         }
         catch (IOException e) {
