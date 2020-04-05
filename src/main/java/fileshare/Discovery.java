@@ -44,7 +44,7 @@ class DiscoveryFunctions {
 
         AtomicBoolean done = new AtomicBoolean(false);
         String ownip = ipa.ipaddr();
-        Reciever r1 = new Reciever(name, ownip, done);
+        Receiver r1 = new Receiver(name, ownip, done);
 
         try {
             String msg;
@@ -66,7 +66,7 @@ class DiscoveryFunctions {
             try {
                 r1.t.join();
             } catch (InterruptedException e) {
-                System.out.println("Error joing of Reciever thread:\n");
+                System.out.println("Error joing of Receiver thread:\n");
                 e.printStackTrace();
             }
         }
@@ -143,16 +143,16 @@ class DiscoveryFunctions {
 }
 
 
-class Reciever implements Runnable {
+class Receiver implements Runnable {
     AtomicBoolean done;
     String name, ip;
     Thread t;
 
-    Reciever(String name, String ip, AtomicBoolean done) {
+    Receiver(String name, String ip, AtomicBoolean done) {
         this.name = name;
         this.ip = ip;
         this.done = done;
-        t = new Thread(this, "Reciever");
+        t = new Thread(this, "Receiver");
         t.start();
     }
 
@@ -175,19 +175,19 @@ class Reciever implements Runnable {
                     try {
                         TimeUnit.MILLISECONDS.sleep(1000);
                     } catch (InterruptedException e) {
-                        System.out.println("Reciever thread interrupted");
+                        System.out.println("Receiver thread interrupted");
                     }
                 }
                 try {
                     TimeUnit.SECONDS.sleep(3);
                 } catch (InterruptedException e) {
-                    System.out.println("Reciever thread interrupted");
+                    System.out.println("Receiver thread interrupted");
                 }
             }
             sock.close();
         }
         catch (IOException e) {
-            System.out.println("Error somewhere in Reciever:\n" + e);
+            System.out.println("Error somewhere in Receiver:\n" + e);
         }
     }
 }
