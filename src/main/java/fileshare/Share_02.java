@@ -224,28 +224,24 @@ class Functions {
                     }
 
                     assert a != null;
-                    for (i = 0; i < a.length; i++) {
+                    for (String s : a) {
 
                         if (onlyfile) {
-                            file = new File(root + "/" + a[i]);
-                        }
-                        else {
-                            file = new File(root + "/" + dirs.get(0) + "/" + a[i]);
+                            file = new File(root + "/" + s);
+                        } else {
+                            file = new File(root + "/" + dirs.get(0) + "/" + s);
                         }
 
                         if (file.isDirectory()) {
-                            dirs.add(dirs.get(0) + "/" + a[i]);
-                        }
-
-                        else if (file.isFile()) {
+                            dirs.add(dirs.get(0) + "/" + s);
+                        } else if (file.isFile()) {
                             fsize = file.length();
-                            fname = a[i];
+                            fname = s;
                             System.out.println(fname);
 
                             if (onlyfile) {
                                 msg = fname + "<SEP>" + fsize;
-                            }
-                            else {
+                            } else {
                                 msg = dirs.get(0) + "/" + fname + "<SEP>" + fsize;
                             }
 
@@ -265,13 +261,11 @@ class Functions {
                                 }
                                 try {
                                     fin.close();
-                                }
-                                catch (IOException io) {
+                                } catch (IOException io) {
                                     System.out.println("Error closing file");
                                     System.exit(1);
                                 }
-                            }
-                            catch (IOException io) {
+                            } catch (IOException io) {
                                 System.out.println("Error opening file");
                                 System.exit(1);
                             }

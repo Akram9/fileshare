@@ -221,12 +221,8 @@ class Sender implements Runnable{
                  stop > System.nanoTime();) {
 
                 while (true) {
-                    try {
-                        sock.receive(pack);
-                    }
-                    catch (SocketTimeoutException to) {
-                        System.out.println("Timed out...");
-                    }
+                    sock.receive(pack);
+
                     msg = new String(pack.getData(),
                             0, pack.getLength(), StandardCharsets.UTF_16);
                     if (msg.split("<SEP>")[0].equals("reciever") &&
