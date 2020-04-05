@@ -14,7 +14,7 @@ class Property {
         Properties properties = new Properties();
 
         try {
-            properties.load(new FileInputStream("config.properties"));
+            properties.load(new FileInputStream("src/main/resources/config.properties"));
             return properties.getProperty(property);
         }
         catch (IOException e) {
