@@ -5,13 +5,12 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class OwnIP {
 
-    String ipaddr() {
+    String getIP() {
         String ip = "127.0.0.1";
         try {
             Enumeration<NetworkInterface> ifaces =
@@ -36,6 +35,7 @@ class OwnIP {
     }
 }
 
+/*
 class DiscoveryFunctions {
 
     OwnIP ipa = new OwnIP();
@@ -43,15 +43,15 @@ class DiscoveryFunctions {
     protected void receive(String name) {
 
         AtomicBoolean done = new AtomicBoolean(false);
-        String ownip = ipa.ipaddr();
-        Receiver r1 = new Receiver(name, ownip, done);
+        String ownip = ipa.getIP();
+        Sender r1 = new Sender(name, ownip, done);
 
         try {
             String msg;
             byte[] buff = new byte[1024];
             DatagramSocket sock = new DatagramSocket(5001);
             DatagramPacket pack = new DatagramPacket(buff, buff.length);
-            System.out.println("Opened up a sock and pack at 5001");
+            System.out.println("Opened up a sock at 5001");
 
             while (true) {
                 sock.receive(pack);
@@ -77,18 +77,17 @@ class DiscoveryFunctions {
 
     protected String send(String name, Scanner scan) {
 
-        ArrayList<String> recvs = new ArrayList<>();
+        ArrayList<String> names = new ArrayList<>();
         ArrayList<String> ips = new ArrayList<>();
 
         try {
             int p =0;
             boolean rep = true;
-            //Scanner scan = new Scanner(System.in);
-            String ownip = ipa.ipaddr();
+            String ownip = ipa.getIP();
 
             while (rep) {
                 rep = false;
-                Sender s1 = new Sender(recvs, ips);
+                Receiver s1 = new Receiver(names, ips);
                 try {
                     TimeUnit.SECONDS.sleep(3);
                 } catch (InterruptedException e) {
@@ -102,18 +101,18 @@ class DiscoveryFunctions {
                     e.printStackTrace();
                 }
 
-                if (recvs.isEmpty()) {rep = true;}
+                if (names.isEmpty()) {rep = true;}
                 else {
                     System.out.println("\nConnect with one of the following:");
                     System.out.println("0: Retry");
-                    for (int j = 0; j < recvs.size(); j++) {
-                        System.out.println((j + 1) + ": " + recvs.get(j) + " at " + ips.get(j));
+                    for (int j = 0; j < names.size(); j++) {
+                        System.out.println((j + 1) + ": " + names.get(j) + " at " + ips.get(j));
                     }
                     System.out.print("\nYour choice: ");
                     p = scan.nextInt();
                     scan.nextLine();
                     if (p == 0) {
-                        recvs.clear();
+                        names.clear();
                         ips.clear();
                         rep = true;
                     }
@@ -141,21 +140,22 @@ class DiscoveryFunctions {
         return null;
     }
 }
+*/
 
-
-class Receiver implements Runnable {
-    AtomicBoolean done;
+class Sender implements Runnable {
+    AtomicBoolean quit;
     String name, ip;
     Thread t;
 
-    Receiver(String name, String ip, AtomicBoolean done) {
+    Sender(String name, String ip, AtomicBoolean quit) {
         this.name = name;
         this.ip = ip;
-        this.done = done;
-        t = new Thread(this, "Receiver");
+        this.quit = quit;
+        t = new Thread(this, "Sender");
         t.start();
     }
 
+    @Override
     public void run() {
         try {
             String msg;
@@ -164,44 +164,44 @@ class Receiver implements Runnable {
             InetAddress group = InetAddress.getByName("229.89.60.90");
             DatagramPacket pack;
 
-            msg = "reciever<SEP>" + name + "<SEP>" + ip;
+            msg = "connection<SEP>" + name + "<SEP>" + ip;
             buff = msg.getBytes(StandardCharsets.UTF_16);
             pack = new DatagramPacket(buff, buff.length, group, 5005);
             System.out.println("Pack to 229.89.60.90 at 5005");
-            while (!done.get()) {
+            while (!quit.get()) {
                 for (int j = 0; j < 2; j++) {
                     System.out.println("Sending pack...");
                     sock.send(pack);
                     try {
                         TimeUnit.MILLISECONDS.sleep(1000);
                     } catch (InterruptedException e) {
-                        System.out.println("Receiver thread interrupted");
+                        System.out.println("Sender thread interrupted");
                     }
                 }
                 try {
                     TimeUnit.SECONDS.sleep(3);
                 } catch (InterruptedException e) {
-                    System.out.println("Receiver thread interrupted");
+                    System.out.println("Sender thread interrupted");
                 }
             }
             sock.close();
         }
         catch (IOException e) {
-            System.out.println("Error somewhere in Receiver:\n" + e);
+            System.out.println("Error somewhere in Sender:\n" + e);
         }
     }
 }
 
-
-class Sender implements Runnable{
-    ArrayList<String> recvs;
+/*
+class Receiver implements Runnable{
+    ArrayList<String> names;
     ArrayList<String> ips;
     Thread t;
 
-    Sender(ArrayList<String> recvs, ArrayList<String> ips) {
-        this.recvs = recvs;
+    Receiver(ArrayList<String> names, ArrayList<String> ips) {
+        this.names = names;
         this.ips = ips;
-        t = new Thread(this, "Sender");
+        t = new Thread(this, "Receiver");
         t.start();
     }
 
@@ -225,9 +225,9 @@ class Sender implements Runnable{
 
                     msg = new String(pack.getData(),
                             0, pack.getLength(), StandardCharsets.UTF_16);
-                    if (msg.split("<SEP>")[0].equals("reciever") &&
-                            !recvs.contains(msg.split("<SEP>")[1])) {
-                        recvs.add(msg.split("<SEP>")[1]);
+                    if (msg.split("<SEP>")[0].equals("receiver") &&
+                            !names.contains(msg.split("<SEP>")[1])) {
+                        names.add(msg.split("<SEP>")[1]);
                         ips.add(msg.split("<SEP>")[2]);
                     }
                 }
@@ -235,6 +235,63 @@ class Sender implements Runnable{
             sock.close();
         }
         catch (IOException e) {
+            System.out.println("Error somewhere in Receiver:\n" + e);
+        }
+    }
+}
+*/
+
+class Receiver implements Runnable {
+
+    ArrayList<String> names, ips;
+    AtomicBoolean quit;
+    String ip;
+    Thread t;
+
+    Receiver( ArrayList<String> names, ArrayList<String> ips, String ip, AtomicBoolean quit) {
+        this.names = names;
+        this.ips = ips;
+        this.ip = ip;
+        this.quit = quit;
+        t = new Thread(this, "Discovery");
+        t.start();
+    }
+
+    @Override
+    public void run() {
+        try {
+            byte[] buffer = new byte[1024];
+            String message;
+            MulticastSocket sock  = new MulticastSocket(5005);
+            InetAddress group = InetAddress.getByName("229.89.60.90");
+            DatagramPacket pack = new DatagramPacket(buffer, buffer.length);
+
+            sock.joinGroup(group);
+            sock.setSoTimeout(2000);
+            
+            while (!quit.get()) {
+
+                sock.receive(pack);
+                message = new String(pack.getData(),
+                        0, pack.getLength(), StandardCharsets.UTF_16);
+
+                if (message.split("<SEP>")[0].equals("connection") &&
+                        !ips.contains(message.split("<SEP>")[2])) {
+
+                    names.add(message.split("<SEP>")[1]);
+                    ips.add(message.split("<SEP>")[2]);
+                }
+                
+                else if (message.split("<SEP>")[0].equals("receive")) {
+
+                    Functions fn = new Functions();
+                    fn.receive();
+                }
+            }
+            sock.close();
+        }
+        catch (IOException e) {
+
             System.out.println("Error somewhere in Sender:\n" + e);
         }
     }

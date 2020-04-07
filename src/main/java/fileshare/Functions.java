@@ -1,41 +1,21 @@
 package fileshare;
 
 import java.io.*;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Properties;
-import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-class Property {
-
-    String getProperty(String property) {
-        Properties properties = new Properties();
-        ClassLoader cl = this.getClass().getClassLoader();
-
-        try {
-            InputStream is = cl.getResourceAsStream("config.properties");
-            assert is != null;
-            properties.load(is);
-            return properties.getProperty(property);
-        }
-        catch (IOException e) {
-            System.out.println("Error reading properties file:\n" + e);
-        }
-        return "<empty>";
-    }
-}
-
-
 class Functions {
-    
-    void recv() {
+
+    void receive() {
         int port = 5001;
         try {
-            System.out.println("\nThis is recv function\n");
+            System.out.println("\nThis is receive function\n");
             OwnIP ownip = new OwnIP();
-            String addr = ownip.ipaddr();
+            String addr = ownip.getIP();
             System.out.println("Local Address: " + addr);
 
             String fname, msg, path;
@@ -50,13 +30,13 @@ class Functions {
             Socket clientSocket = server.accept();
 
             System.out.println("connected");
-            
+
             InputStream in = clientSocket.getInputStream();
             PrintWriter mout = new PrintWriter(clientSocket.getOutputStream(), true);
             BufferedReader min = new BufferedReader(
-                new InputStreamReader(clientSocket.getInputStream())
+                    new InputStreamReader(clientSocket.getInputStream())
             );
-            
+
             while (true) {
                 System.out.println("Waiting for message...");
                 msg = min.readLine();
@@ -126,7 +106,7 @@ class Functions {
                         System.exit(1);
                     }
 
-                    msg = "Recieved file " + fname;
+                    msg = "Received file " + fname;
                     mout.println(msg);
                     System.out.println("Server: " + msg);
                 }
@@ -151,9 +131,9 @@ class Functions {
         }
         System.out.println("Closed all");
     }
-    
+
     void send(String host, String filepath) {
-        
+
         int port = 5001;
         int len;
 
@@ -167,21 +147,21 @@ class Functions {
             long fsize;
             File file;
             boolean onlyfile = false;
-            
+
             try {
-				TimeUnit.MILLISECONDS.sleep(1000);
-			} catch (InterruptedException e) {
-				System.out.println("Error while waiting to connect:\n");
-				e.printStackTrace();
+                TimeUnit.MILLISECONDS.sleep(1000);
+            } catch (InterruptedException e) {
+                System.out.println("Error while waiting to connect:\n");
+                e.printStackTrace();
             }
-            
+
             Socket sock = new Socket(host, port);
             OutputStream out = sock.getOutputStream();
             //InputStream in = sock.getInputStream();
             PrintWriter mout = new PrintWriter(sock.getOutputStream(), true);
             BufferedReader min = new BufferedReader(
-                new InputStreamReader(sock.getInputStream()));
-            
+                    new InputStreamReader(sock.getInputStream()));
+
             System.out.println("\nThis is send function\n");
             paths = filepath.split(",");
             for (i = 0; i < paths.length; i++) {
@@ -198,8 +178,8 @@ class Functions {
                 }
 
                 root = String.join("/",
-                    Arrays.copyOfRange(
-                        fpath.split("/"), 0, (fpath.split("/").length - 1)));
+                        Arrays.copyOfRange(
+                                fpath.split("/"), 0, (fpath.split("/").length - 1)));
                 System.out.println("Root: " + root);
                 f1 = fpath.split("/")[fpath.split("/").length - 1];
                 dirs.add(f1);
@@ -303,54 +283,5 @@ class Functions {
             System.exit(1);
         }
         System.out.println("Closed all");
-    }
-}
-
-class Share_02 {
-
-    public static void main (String[] args) {
-        Property props = new Property();
-        String c;
-        Functions inet = new Functions();
-        DiscoveryFunctions df = new DiscoveryFunctions();
-        Scanner scan = new Scanner(System.in);
-        final String name = props.getProperty("name");
-        int i = 0;
-        System.out.println("Device name: " + name);
-
-        loop: while (true) {
-            System.out.print(i + ", Enter 'q' to quit, 's' to send, 'r' to receive: ");
-            c = scan.nextLine();
-
-            if (c.equals("\n")) {
-                System.out.println("newline character");
-                continue;
-            }
-            switch(c) {
-                case "r":
-                    df.receive(name);
-                    inet.recv();
-                    break;
-                case "w":
-                    OwnIP ownip = new OwnIP();
-                    String ip = ownip.ipaddr();
-                    System.out.println("IP: " + ip);
-                    break;
-                case "s":
-                    System.out.print("Searching hosts...");
-                    String host = df.send(name, scan);
-                    System.out.println("IP of reciever: " + host);
-                    System.out.println("Enter path of files and dirs with ',': ");
-                    String filepath = scan.nextLine();
-                    System.out.println("Done taking input: " + filepath);
-                    inet.send(host, filepath);
-                    break;
-                case "q":
-                    break loop;
-                default:
-                    System.out.println("Your input is not satisfactory...\n");
-            }
-        }
-        scan.close();
     }
 }
