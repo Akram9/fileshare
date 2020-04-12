@@ -5,7 +5,37 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+
+class Log {
+    static Logger logger = Logger.getLogger("Share");
+    private static Log ins = new Log();
+
+    public static Log getInstance() {
+        return ins;
+    }
+
+    Log() {
+        String logfile = "share.log";
+
+        try {
+            FileHandler fileHandler = new FileHandler(logfile, 1000000, 10, false);
+            SimpleFormatter simpleFormatter = new SimpleFormatter();
+
+            fileHandler.setFormatter(simpleFormatter);
+            logger.addHandler(fileHandler);
+            logger.setLevel(Level.ALL);
+        }
+        catch (IOException io) {
+            logger.severe("Logger exception:\n"+io.toString());
+        }
+    }
+}
 
 class Property {
 
@@ -39,6 +69,7 @@ class Share {
         OwnIP ownip = new OwnIP();
         String ip = ownip.getIP();
         String host;
+        Log log = new Log();
         final String name = props.getProperty("name");
         int p, i = 0;
 
@@ -55,6 +86,13 @@ class Share {
             switch(c) {
                 case "s":
                     System.out.print("Searching hosts...");
+
+                    try {
+                        TimeUnit.SECONDS.sleep(5);
+                    } catch (InterruptedException e) {
+                        System.out.println("Sender thread interrupted");
+                    }
+
                     if (names.isEmpty()) {
                         System.out.print("No connections available.");
                         System.out.println(" Try with another device connected to the network.");
@@ -100,6 +138,7 @@ class Share {
         }
         catch (InterruptedException ie) {
             System.out.println("Interrupted while joining threads:\n" + ie);
+
         }
     }
 }
