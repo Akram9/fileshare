@@ -1,22 +1,31 @@
 package fileshare;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 class Functions {
 
+    private Logger logger = LoggerFactory.getLogger("Functions");
+    private Map<String, String> contextMap = MDC.getCopyOfContextMap();
+
     void receive() {
         int port = 5001;
         try {
+            MDC.setContextMap(contextMap);
             System.out.println("\nThis is receive function\n");
             OwnIP ownip = new OwnIP();
             String addr = ownip.getIP();
-            System.out.println("Local Address: " + addr);
+            // TODO: System.out.println("Local Address: " + addr);
 
             String fname, msg, path;
             Property props = new Property();
@@ -29,7 +38,7 @@ class Functions {
             ServerSocket server = new ServerSocket(port);
             Socket clientSocket = server.accept();
 
-            System.out.println("connected");
+            logger.debug(clientSocket.getInetAddress() + " connected.");
 
             InputStream in = clientSocket.getInputStream();
             PrintWriter mout = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -38,9 +47,9 @@ class Functions {
             );
 
             while (true) {
-                System.out.println("Waiting for message...");
+                logger.debug("Waiting for message.");
                 msg = min.readLine();
-                System.out.println("Client: " + msg);
+                logger.debug("Sender: " + msg);
 
                 if (msg.split("<SEP>").length == 3) {break;}
 
@@ -48,67 +57,64 @@ class Functions {
                     path = root + "/" + msg;
                     if (!(new File(path).mkdir())) {
                         if (new File(path).isDirectory()){
-                            System.out.println(path + " already created. Using it.");
+                            logger.debug(path + " already created. Using it.");
                         }
                         else {
-                            System.out.println(path + " can't be created");
+                            logger.info(path + " can't be created");
                             if (!(new File(path).canWrite())) {
-                                System.out.println("No permission to write here");
+                                logger.info("No permission to write here");
                             }
                             else {
-                                System.out.println("Has permission to write here");
+                                logger.info("Has permission to write here");
                             }
                             //TODO exit this to either connection close or repeat till it is created
+                            logger.error("File I/O error. Exit.");
                             System.exit(1);
                         }
                     }
                     msg = "Created directory " + path;
                     mout.println(msg);
-                    System.out.println("Server: " + msg);
+                    logger.debug(msg);
                 }
 
                 else if (msg.split("<SEP>").length == 2) {
                     fname = msg.split("<SEP>")[0];
-                    System.out.println(msg.split("<SEP>")[1].length() + ", " + len);
                     fsize = Long.parseLong(msg.split("<SEP>")[1]);
-                    System.out.print("File to receive is: " + fname);
-                    System.out.println(" with size: " + fsize);
+                    logger.debug(msg);
                     msg = "Got metadata";
                     mout.println(msg);
-                    System.out.println("Server: " + msg);
                     path = root + "/" + fname;
 
                     try {
                         FileOutputStream fin = new FileOutputStream(path);
+                        logger.debug("Opened: " + path);
                         try {
-                            len = 0;
                             while(fsize > 0) {
                                 len = in.read(buffer);
                                 fin.write(buffer, 0, len);
                                 fsize -= len;
-                                //len = 0;
                             }
                         }
                         catch (IOException io) {
-                            System.out.println("Error writing to file");
+                            logger.error("Error writing to file");
                             System.exit(1);
                         }
                         try {
                             fin.close();
                         }
                         catch (IOException io) {
-                            System.out.println("Error closing file");
+                            logger.error("Error closing file");
                             System.exit(1);
                         }
                     }
                     catch (IOException io) {
-                        System.out.println("Error opening file");
+                        logger.error("Error opening file");
                         System.exit(1);
                     }
 
                     msg = "Received file " + fname;
                     mout.println(msg);
-                    System.out.println("Server: " + msg);
+                    logger.debug(msg);
                 }
             }
 
@@ -121,18 +127,20 @@ class Functions {
                 server.close();
             }
             catch (IOException io) {
-                System.out.println("Error closing something:\n" + io);
+                logger.error("Error closing something: " + io);
                 System.exit(1);
             }
         }
         catch (IOException i) {
-            System.out.println("IOError:\n" + i);
+            logger.error("IOError: " + i);
             System.exit(1);
         }
-        System.out.println("Closed all");
+        logger.info("Closed all");
     }
 
     void send(String host, String filepath) {
+
+        MDC.setContextMap(contextMap);
 
         int port = 5001;
         int len;
@@ -153,6 +161,7 @@ class Functions {
             } catch (InterruptedException e) {
                 System.out.println("Error while waiting to connect:\n");
                 e.printStackTrace();
+                logger.error("Error while waiting to connect: " + e);
             }
 
             Socket sock = new Socket(host, port);
@@ -162,7 +171,6 @@ class Functions {
             BufferedReader min = new BufferedReader(
                     new InputStreamReader(sock.getInputStream()));
 
-            System.out.println("\nThis is send function\n");
             paths = filepath.split(",");
             for (i = 0; i < paths.length; i++) {
                 fpath = paths[i];
@@ -170,6 +178,7 @@ class Functions {
 
                 if (!file.isFile() && !file.isDirectory()) {
                     System.out.println(fpath + " is not valid file/dir. Skipping.");
+                    logger.debug(fpath + " is not valid path. Skipping.");
                     continue;
                 }
 
@@ -181,15 +190,18 @@ class Functions {
                         Arrays.copyOfRange(
                                 fpath.split("/"), 0, (fpath.split("/").length - 1)));
                 System.out.println("Root: " + root);
+                logger.debug("Root: " + root);
                 f1 = fpath.split("/")[fpath.split("/").length - 1];
                 dirs.add(f1);
 
                 while (dirs.size() > 0) {
                     System.out.println("dirs: " + dirs);
+                    logger.debug("dirs: " + dirs);
                     file = new File(root + "/" + dirs.get(0));
 
                     if (onlyfile) {
                         System.out.println(fpath + " is a file.");
+                        logger.debug(fpath + " is a file.");
                         a = new String[] {f1};
                     }
 
@@ -197,10 +209,12 @@ class Functions {
                         a = file.list();
                         msg = dirs.get(0);
                         mout.println(msg);
-                        System.out.println("Client: " + msg);
+                        System.out.println("Me: " + msg);
+                        logger.debug("Me: " + msg);
                         System.out.println("Waiting for message...");
                         msg = min.readLine();
-                        System.out.println("Server: " + msg);
+                        System.out.println("Receiver: " + msg);
+                        logger.debug("Me: " + msg);
                     }
 
                     assert a != null;
@@ -218,6 +232,7 @@ class Functions {
                             fsize = file.length();
                             fname = s;
                             System.out.println(fname);
+                            logger.debug(fname);
 
                             if (onlyfile) {
                                 msg = fname + "<SEP>" + fsize;
@@ -226,13 +241,15 @@ class Functions {
                             }
 
                             mout.println(msg);
-                            System.out.println("Client: " + msg);
+                            System.out.println("Me: " +  msg);
+                            logger.debug("Me: " + msg);
                             System.out.println("Waiting for message...");
 
                             msg = min.readLine();
-                            System.out.print("Server: ");
-                            System.out.println(msg);
+                            System.out.print("Receiver: " + msg);
+                            logger.debug("Receiver: " + msg);
                             System.out.println("Sending file...");
+                            logger.debug("Sending file.");
 
                             try {
                                 InputStream fin = new FileInputStream(file);
@@ -243,15 +260,17 @@ class Functions {
                                     fin.close();
                                 } catch (IOException io) {
                                     System.out.println("Error closing file");
+                                    logger.error("Error closing file");
                                     System.exit(1);
                                 }
                             } catch (IOException io) {
                                 System.out.println("Error opening file");
+                                logger.error("Error opening file");
                                 System.exit(1);
                             }
                             System.out.println("Waiting for message...");
                             msg = min.readLine();
-                            System.out.println("Server: " + msg);
+                            System.out.println("Receiver: " + msg);
                         }
                     }
                     dirs.remove(0);
@@ -259,8 +278,9 @@ class Functions {
                 }
             }
             msg = "break<SEP>the<SEP>loop";
-            System.out.println("Client: " + msg);
+            System.out.println("Me: " + msg);
             mout.println(msg);
+            logger.info("Breaking connection.");
 
             try {
                 min.close();
@@ -270,18 +290,22 @@ class Functions {
                 sock.close();
             }
             catch (IOException io) {
-                System.out.println("Error closing ssomething\n" + io);
+                System.out.println("Error closing something\n" + io);
+                logger.error("Error closing something: " + io);
                 System.exit(1);
             }
         }
         catch (UnknownHostException u) {
             System.out.println("Unknown host\n" + u);
+            logger.error("Unknown host: " + u);
             System.exit(1);
         }
         catch (IOException i) {
             System.out.println("IOError\n" + i);
+            logger.error("IOError: " + i);
             System.exit(1);
         }
         System.out.println("Closed all");
+        logger.info("Closed connection.");
     }
 }

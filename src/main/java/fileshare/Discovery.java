@@ -5,8 +5,13 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 class OwnIP {
 
@@ -147,6 +152,10 @@ class Sender implements Runnable {
     String name, ip;
     Thread t;
 
+    private Logger logger = LoggerFactory.getLogger("Sender");
+    private Map<String, String> contextMap = MDC.getCopyOfContextMap();
+
+
     Sender(String name, String ip, AtomicBoolean quit) {
         this.name = name;
         this.ip = ip;
@@ -164,30 +173,31 @@ class Sender implements Runnable {
             InetAddress group = InetAddress.getByName("229.89.60.90");
             DatagramPacket pack;
 
+            MDC.setContextMap(contextMap);
             msg = "connection<SEP>" + name + "<SEP>" + ip;
             buff = msg.getBytes(StandardCharsets.UTF_16);
             pack = new DatagramPacket(buff, buff.length, group, 5005);
-            System.out.println("Pack to 229.89.60.90 at 5005");
+            logger.info("Pack to 229.89.60.90 at 5005");
             while (!quit.get()) {
                 for (int j = 0; j < 2; j++) {
-                    System.out.println("Sending pack...");
+                    logger.info("Sending pack...");
                     sock.send(pack);
                     try {
                         TimeUnit.MILLISECONDS.sleep(1000);
                     } catch (InterruptedException e) {
-                        System.out.println("Sender thread interrupted");
+                        logger.error("Sender thread interrupted");
                     }
                 }
                 try {
                     TimeUnit.SECONDS.sleep(3);
                 } catch (InterruptedException e) {
-                    System.out.println("Sender thread interrupted");
+                    logger.error("Sender thread interrupted");
                 }
             }
             sock.close();
         }
         catch (IOException e) {
-            System.out.println("Error somewhere in Sender:\n" + e);
+            logger.error("Error somewhere in Sender:" + e);
         }
     }
 }
@@ -248,6 +258,9 @@ class Receiver implements Runnable {
     String ip;
     Thread t;
 
+    private Logger logger = LoggerFactory.getLogger("Receiver");
+    private Map<String, String> contextMap = MDC.getCopyOfContextMap();
+
     Receiver( ArrayList<String> names, ArrayList<String> ips, String ip, AtomicBoolean quit) {
         this.names = names;
         this.ips = ips;
@@ -262,6 +275,7 @@ class Receiver implements Runnable {
         try {
             byte[] buffer = new byte[1024];
             String message;
+            MDC.setContextMap(contextMap);
             MulticastSocket sock  = new MulticastSocket(5005);
             InetAddress group = InetAddress.getByName("229.89.60.90");
             DatagramPacket pack = new DatagramPacket(buffer, buffer.length);
@@ -270,20 +284,17 @@ class Receiver implements Runnable {
             sock.setSoTimeout(2000);
             
             while (!quit.get()) {
-
                 sock.receive(pack);
                 message = new String(pack.getData(),
                         0, pack.getLength(), StandardCharsets.UTF_16);
 
                 if (message.split("<SEP>")[0].equals("connection") &&
                         !ips.contains(message.split("<SEP>")[2])) {
-
                     names.add(message.split("<SEP>")[1]);
                     ips.add(message.split("<SEP>")[2]);
                 }
                 
                 else if (message.split("<SEP>")[0].equals("receive")) {
-
                     Functions fn = new Functions();
                     fn.receive();
                 }
@@ -291,8 +302,7 @@ class Receiver implements Runnable {
             sock.close();
         }
         catch (IOException e) {
-
-            System.out.println("Error somewhere in Sender:\n" + e);
+            logger.error("Error somewhere in Sender: " + e);
         }
     }
 }
