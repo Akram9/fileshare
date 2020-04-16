@@ -41,7 +41,7 @@ class Share {
         AtomicBoolean quit = new AtomicBoolean(false);
         Property props = new Property();
         String c, filepath;
-        Functions inet = new Functions();
+        Functions fn = new Functions();
         Scanner scan = new Scanner(System.in);
         OwnIP ownip = new OwnIP();
         String ip = ownip.getIP();
@@ -101,9 +101,9 @@ class Share {
                             System.out.println("IP of receiver: " + host);
                             System.out.println("Enter path of files and dirs with ',': ");
                             filepath = scan.nextLine();
-                            logger.info("Filepath: " + filepath);
+                            logger.debug("Filepath: " + filepath);
                             System.out.println("Done taking input: " + filepath);
-                            inet.send(host, filepath);
+                            fn.send(host, filepath);
                         }
                         break;
                     }

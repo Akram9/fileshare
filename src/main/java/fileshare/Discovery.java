@@ -266,7 +266,7 @@ class Receiver implements Runnable {
         this.ips = ips;
         this.ip = ip;
         this.quit = quit;
-        t = new Thread(this, "Discovery");
+        t = new Thread(this, "Receiver");
         t.start();
     }
 
@@ -281,7 +281,7 @@ class Receiver implements Runnable {
             DatagramPacket pack = new DatagramPacket(buffer, buffer.length);
 
             sock.joinGroup(group);
-            sock.setSoTimeout(2000);
+            sock.setSoTimeout(500);
             
             while (!quit.get()) {
                 sock.receive(pack);
@@ -290,11 +290,13 @@ class Receiver implements Runnable {
 
                 if (message.split("<SEP>")[0].equals("connection") &&
                         !ips.contains(message.split("<SEP>")[2])) {
+                    logger.debug("Got connection.");
                     names.add(message.split("<SEP>")[1]);
                     ips.add(message.split("<SEP>")[2]);
                 }
                 
                 else if (message.split("<SEP>")[0].equals("receive")) {
+                    logger.debug("Entering receive function.");
                     Functions fn = new Functions();
                     fn.receive();
                 }
@@ -302,7 +304,7 @@ class Receiver implements Runnable {
             sock.close();
         }
         catch (IOException e) {
-            logger.error("Error somewhere in Sender: " + e);
+            logger.error("Error somewhere in Receiver: " + e);
         }
     }
 }

@@ -16,13 +16,13 @@ import java.util.concurrent.TimeUnit;
 class Functions {
 
     private Logger logger = LoggerFactory.getLogger("Functions");
-    private Map<String, String> contextMap = MDC.getCopyOfContextMap();
+   // private Map<String, String> contextMap = MDC.getCopyOfContextMap();
 
     void receive() {
         int port = 5001;
         try {
-            MDC.setContextMap(contextMap);
-            System.out.println("\nThis is receive function\n");
+            //MDC.setContextMap(contextMap);
+            logger.info("Entered receive function.");
             OwnIP ownip = new OwnIP();
             String addr = ownip.getIP();
             // TODO: System.out.println("Local Address: " + addr);
@@ -140,7 +140,7 @@ class Functions {
 
     void send(String host, String filepath) {
 
-        MDC.setContextMap(contextMap);
+        //MDC.setContextMap(contextMap);
 
         int port = 5001;
         int len;
