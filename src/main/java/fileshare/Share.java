@@ -41,7 +41,6 @@ class Share {
         AtomicBoolean quit = new AtomicBoolean(false);
         Property props = new Property();
         String c, filepath;
-        Functions fn = new Functions();
         Scanner scan = new Scanner(System.in);
         OwnIP ownip = new OwnIP();
         String ip = ownip.getIP();
@@ -52,8 +51,9 @@ class Share {
         MDC.put("IP", ip);
         System.out.println("Device: " + name + ", at: " + ip);
 
-        Receiver receiver = new Receiver(names, ips, ip, quit);
-        Sender sender = new Sender(name, ip, quit);
+        DiscoveryReceiver discoveryReceiver = new DiscoveryReceiver(names, ips, ip, quit);
+        DiscoverySender discoverySender = new DiscoverySender(name, ip, quit);
+        Receiver receiver = new Receiver(quit);
 
         loop: while (true) {
             System.out.print(i + ", Enter 'q' to quit or 's' to send: ");
@@ -66,7 +66,7 @@ class Share {
                     logger.info("Enter 'send' fn.");
 
                     try {
-                        TimeUnit.SECONDS.sleep(5);
+                        TimeUnit.SECONDS.sleep(3);
                     } catch (InterruptedException e) {
                         System.out.println("Sender thread interrupted");
                         logger.error("Sender thread interrupted");
@@ -103,7 +103,14 @@ class Share {
                             filepath = scan.nextLine();
                             logger.debug("Filepath: " + filepath);
                             System.out.println("Done taking input: " + filepath);
-                            fn.send(host, filepath);
+                            Sender sender = new Sender(host, filepath);
+                            try {
+                                sender.thread.join();
+                            }
+                            catch (InterruptedException ie) {
+                                System.out.println("Interrupted thread: " + ie);
+                                logger.error("Interrupted thread: " + ie);
+                            }
                         }
                         break;
                     }
@@ -119,8 +126,9 @@ class Share {
         quit.set(true);
 
         try {
-            sender.t.join();
-            receiver.t.join();
+            discoverySender.t.join();
+            discoveryReceiver.t.join();
+            receiver.thread.join();
             logger.info("Joined child threads.");
         }
         catch (InterruptedException ie) {

@@ -147,7 +147,7 @@ class DiscoveryFunctions {
 }
 */
 
-class Sender implements Runnable {
+class DiscoverySender implements Runnable {
     AtomicBoolean quit;
     String name, ip;
     Thread t;
@@ -155,12 +155,11 @@ class Sender implements Runnable {
     private Logger logger = LoggerFactory.getLogger("Sender");
     private Map<String, String> contextMap = MDC.getCopyOfContextMap();
 
-
-    Sender(String name, String ip, AtomicBoolean quit) {
+    DiscoverySender(String name, String ip, AtomicBoolean quit) {
         this.name = name;
         this.ip = ip;
         this.quit = quit;
-        t = new Thread(this, "Sender");
+        t = new Thread(this, "DiscoverySender");
         t.start();
     }
 
@@ -251,7 +250,7 @@ class Receiver implements Runnable{
 }
 */
 
-class Receiver implements Runnable {
+class DiscoveryReceiver implements Runnable {
 
     ArrayList<String> names, ips;
     AtomicBoolean quit;
@@ -261,12 +260,12 @@ class Receiver implements Runnable {
     private Logger logger = LoggerFactory.getLogger("Receiver");
     private Map<String, String> contextMap = MDC.getCopyOfContextMap();
 
-    Receiver( ArrayList<String> names, ArrayList<String> ips, String ip, AtomicBoolean quit) {
+    DiscoveryReceiver( ArrayList<String> names, ArrayList<String> ips, String ip, AtomicBoolean quit) {
         this.names = names;
         this.ips = ips;
         this.ip = ip;
         this.quit = quit;
-        t = new Thread(this, "Receiver");
+        t = new Thread(this, "DiscoveryReceiver");
         t.start();
     }
 
@@ -294,12 +293,13 @@ class Receiver implements Runnable {
                     names.add(message.split("<SEP>")[1]);
                     ips.add(message.split("<SEP>")[2]);
                 }
-                
+
+                /* ToDo: Delete the following
                 else if (message.split("<SEP>")[0].equals("receive")) {
                     logger.debug("Entering receive function.");
                     Functions fn = new Functions();
                     fn.receive();
-                }
+                }*/
             }
             sock.close();
         }
