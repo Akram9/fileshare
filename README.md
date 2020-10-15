@@ -1,4 +1,4 @@
 This is my first java project.
-It is a file sharing application that can share files and folders between any two devices in a LAN connection (Windows <-> Windows, Android <-> Android and Windows <-> Android).
+It is a file sharing application that can share files and folders between any two devices in a LAN connection.
 Only the commandline application is working fine now - work under process.
-The devices running Windows and Android are targeted.
+The devices running Ubuntu, Windows and Android are targeted.
