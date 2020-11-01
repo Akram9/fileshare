@@ -1,5 +1,15 @@
+# Ignore target files
+target
+
 # Ignore all class files
 *.class
 
 # Ignore all jar files
 *.jar
+
+# Ignore all log files
+*.log
+
+# Ignore gradle, idea files
+.gradle
+.idea
