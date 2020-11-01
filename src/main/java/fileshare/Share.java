@@ -53,17 +53,19 @@ class Share {
 
         DiscoveryReceiver discoveryReceiver = new DiscoveryReceiver(names, ips, ip, quit);
         DiscoverySender discoverySender = new DiscoverySender(name, ip, quit);
+
+        // TODO: Change the following to UDP msg first. Then open receiver on the other side.
         Receiver receiver = new Receiver(quit);
 
         loop: while (true) {
-            System.out.print(i + ", Enter 'q' to quit or 's' to send: ");
+            System.out.print(i + ", Enter 's' to send or 'q' to quit: ");
 
             c = scan.nextLine();
 
             switch(c) {
                 case "s":
                     System.out.print("Searching hosts...");
-                    logger.info("Enter 'send' fn.");
+                    logger.info("Entered 'send' fn.");
 
                     try {
                         TimeUnit.SECONDS.sleep(3);

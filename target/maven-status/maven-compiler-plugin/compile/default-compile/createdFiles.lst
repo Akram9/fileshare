@@ -1,0 +1,8 @@
+fileshare/DiscoveryReceiver.class
+fileshare/ReceiverThread.class
+fileshare/DiscoverySender.class
+fileshare/Sender.class
+fileshare/Receiver.class
+fileshare/Property.class
+fileshare/Share.class
+fileshare/OwnIP.class

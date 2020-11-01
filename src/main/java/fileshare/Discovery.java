@@ -1,5 +1,13 @@
 package fileshare;
 
+/*
+* DiscoverySender thread runs a UDP socket at port 5003.
+* The Datagram packet of this socket is at port 5005.
+* The DiscoveryReceiver thread runs a UDP socket at port 5005.
+* The two threads run simultaneously on the same device.
+* The MultiCast group is at 239.89.60.90:5005.
+*/
+
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -62,14 +70,14 @@ class DiscoverySender implements Runnable {
             String msg;
             byte[] buff;
             DatagramSocket sock = new DatagramSocket(5003);
-            InetAddress group = InetAddress.getByName("229.89.60.90");
+            InetAddress group = InetAddress.getByName("239.89.60.90");
             DatagramPacket pack;
 
             MDC.setContextMap(contextMap);
             msg = "connection<SEP>" + name + "<SEP>" + ip;
             buff = msg.getBytes(StandardCharsets.UTF_16);
             pack = new DatagramPacket(buff, buff.length, group, 5005);
-            logger.info("Pack to 229.89.60.90 at 5005");
+            logger.info("Pack to 239.89.60.90 at 5005");
             while (!quit.get()) {
                 for (int j = 0; j < 2; j++) {
                     logger.info("Sending pack...");
@@ -120,7 +128,7 @@ class DiscoveryReceiver implements Runnable {
             String message;
             MDC.setContextMap(contextMap);
             MulticastSocket sock  = new MulticastSocket(5005);
-            InetAddress group = InetAddress.getByName("229.89.60.90");
+            InetAddress group = InetAddress.getByName("239.89.60.90");
             DatagramPacket pack = new DatagramPacket(buffer, buffer.length);
 
             sock.joinGroup(group);
@@ -137,12 +145,13 @@ class DiscoveryReceiver implements Runnable {
                     names.add(message.split("<SEP>")[1]);
                     ips.add(message.split("<SEP>")[2]);
                 }
-
-                /* ToDo: Delete the following
+                /*
+                // TODO:Add thread checking feature and start receiver function.
                 else if (message.split("<SEP>")[0].equals("receive")) {
+                    // TODO: Check for running threads and respond accordingly.
                     logger.debug("Entering receive function.");
-                    Functions fn = new Functions();
-                    fn.receive();
+                    ReceiverThread receiverThread = new ReceiverThread();
+                    // TODO: Send confirmation to sender.
                 }*/
             }
             sock.close();

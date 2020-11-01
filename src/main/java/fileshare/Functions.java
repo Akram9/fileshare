@@ -1,5 +1,11 @@
 package fileshare;
 
+/*
+* The Receiver thread runs a TCP socket at port 5001.
+* The Sender thread runs a TCP socket at port 5001.
+* These two threads do not run simultaneously on the same device.
+*/
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -48,6 +54,8 @@ class Receiver implements Runnable {
             try {
                 Socket clientSocket = serverSocket.accept();
                 logger.debug(clientSocket.getInetAddress() + " connected.");
+                // TODO: Clean the below.
+                //ReceiverThread receiverThread = new ReceiverThread();
                 ReceiverThread receiverThread = new ReceiverThread(clientSocket);
 
                 while (receiverThread.thread.isAlive()) {
@@ -74,13 +82,16 @@ class Receiver implements Runnable {
 }
 
 class ReceiverThread implements Runnable {
-    
+
+    final int port = 5001;
+    ServerSocket serverSocket;
     Socket clientSocket;
     Thread thread;
     private Logger logger = LoggerFactory.getLogger("Functions");
     private Map<String, String> contextMap = MDC.getCopyOfContextMap();
 
     ReceiverThread(Socket clientSocket) {
+        // TODO: Clean the below.
         this.clientSocket = clientSocket;
         thread = new Thread(this, "ReceiverThread");
         thread.start();
@@ -95,6 +106,7 @@ class ReceiverThread implements Runnable {
 
             String fname, msg, path;
             Property props = new Property();
+            // TODO: Remove the props.
             final String root = props.getProperty("download_path");
             byte[] buffer = new byte[8192];
             //byte[] mess = new byte[2048];
@@ -106,6 +118,10 @@ class ReceiverThread implements Runnable {
             BufferedReader min = new BufferedReader(
                     new InputStreamReader(clientSocket.getInputStream())
             );
+
+            msg = "Connected";
+            mout.println(msg);
+            logger.debug("Sent confirmation to Sender.");
 
             while (true) {
                 logger.debug("Waiting for message.");
@@ -126,7 +142,8 @@ class ReceiverThread implements Runnable {
                             } else {
                                 logger.info("Has permission to write here");
                             }
-                            //TODO exit this to either connection close or repeat till it is created
+                            // TODO exit this to either connection close or repeat till it is created
+                            //  or send message to sender to skip all files in this directory
                             logger.error("File I/O error. Exit.");
                             System.exit(1);
                         }
@@ -239,6 +256,10 @@ class Sender implements Runnable {
             BufferedReader min = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
 
+            // Confirm connection with other side.
+            msg = min.readLine();
+            System.out.println("Receiver: " + msg);
+
             paths = filepath.split(",");
             for (i = 0; i < paths.length; i++) {
                 fpath = paths[i];
@@ -277,12 +298,12 @@ class Sender implements Runnable {
                         a = file.list();
                         msg = dirs.get(0);
                         mout.println(msg);
-                        System.out.println("Me: " + msg);
-                        logger.debug("Me: " + msg);
+                        System.out.println("Sender: " + msg);
+                        logger.debug("Sender: " + msg);
                         System.out.println("Waiting for message...");
                         msg = min.readLine();
                         System.out.println("Receiver: " + msg);
-                        logger.debug("Me: " + msg);
+                        logger.debug("Receiver: " + msg);
                     }
 
                     assert a != null;
